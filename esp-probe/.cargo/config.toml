@@ -1,0 +1,17 @@
+# Three chips across two architectures, so the target and toolchain are chosen on
+# the command line rather than pinned here. See README.md.
+#
+# `linkall.x` is esp-hal's linker script. Without it the memory layout and symbols
+# like `_stack_end_cpu0` are simply absent and the link fails late and obscurely.
+
+[target.xtensa-esp32s3-none-elf]
+runner = "espflash flash --monitor"
+rustflags = ["-C", "link-arg=-nostartfiles", "-C", "link-arg=-Tlinkall.x"]
+
+[target.riscv32imc-unknown-none-elf]
+runner = "espflash flash --monitor"
+rustflags = ["-C", "link-arg=-Tlinkall.x", "-C", "force-frame-pointers"]
+
+[target.riscv32imac-unknown-none-elf]
+runner = "espflash flash --monitor"
+rustflags = ["-C", "link-arg=-Tlinkall.x", "-C", "force-frame-pointers"]

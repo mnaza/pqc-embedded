@@ -1,0 +1,10 @@
+[package]
+name = "boot-budget"
+description = "A no_std boot-verifier abstraction, and the flash/RAM/OTP arithmetic that decides whether a PQ scheme fits"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+lms-verify = { path = "../lms-verify" }

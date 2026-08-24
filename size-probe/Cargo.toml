@@ -1,0 +1,32 @@
+[workspace]
+
+[package]
+name = "size-probe"
+version = "0.0.1"
+edition = "2021"
+publish = false
+
+# Deliberately outside the workspace: this crate only builds for bare-metal
+# targets and would break `cargo test` at the root.
+
+[dependencies]
+sha2 = { version = "0.10", default-features = false }
+# The newer schemes pull sha2 0.11, whose SHA-256 compiles four times larger than
+# 0.10's. Both end up linked, so each scheme needs a baseline built from the same
+# version it actually uses -- otherwise the comparison measures crate versions.
+sha2_v11 = { package = "sha2", version = "0.11", default-features = false }
+sha3 = { version = "0.11", default-features = false }
+lms-verify = { path = "../crates/lms-verify" }
+ml-dsa = { version = "0.1", default-features = false }
+slh-dsa = { version = "0.2.0-rc.5", default-features = false }
+signature = { version = "3.0.0-rc", default-features = false }
+p256 = { version = "0.14", default-features = false, features = ["ecdsa"] }
+ed25519-dalek = { version = "3.0", default-features = false }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+debug = false
+strip = false

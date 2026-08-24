@@ -1,0 +1,11 @@
+/target
+**/target/
+**/*.rs.bk
+# Cargo.lock IS tracked. Normally a library workspace would not, but crate
+# versions have moved the measured numbers here by a factor of two -- sha2 0.10's
+# SHA-256 compiles to 3880 bytes and 0.11's to 8840 -- so the lock file is part of
+# what makes the figures reproducible.
+.DS_Store
+/scratch
+/size-probe/target
+/esp32s3-probe/target

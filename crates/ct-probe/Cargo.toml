@@ -1,0 +1,13 @@
+[package]
+name = "ct-probe"
+description = "dudect-style timing leakage detection for Rust, with the caveats stated out loud"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+rand = { workspace = true }
+
+[dev-dependencies]
+sha2 = { workspace = true, features = ["std"] }

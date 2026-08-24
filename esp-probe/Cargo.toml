@@ -1,0 +1,29 @@
+[workspace]
+
+[package]
+name = "esp-probe"
+version = "0.0.1"
+edition = "2021"
+publish = false
+
+[features]
+# Xtensa LX7. Needs the `esp` Rust fork and the Xtensa GCC linker.
+esp32s3 = ["esp-hal/esp32s3", "esp-hal/unstable", "esp-println/esp32s3", "esp-backtrace/esp32s3", "esp-bootloader-esp-idf/esp32s3"]
+# RISC-V. Stock stable Rust, stock rustup target, rust-lld -- no GCC involved.
+esp32c3 = ["esp-hal/esp32c3", "esp-hal/unstable", "esp-println/esp32c3", "esp-backtrace/esp32c3", "esp-bootloader-esp-idf/esp32c3", "dep:riscv"]
+esp32c6 = ["esp-hal/esp32c6", "esp-hal/unstable", "esp-println/esp32c6", "esp-backtrace/esp32c6", "esp-bootloader-esp-idf/esp32c6", "dep:riscv"]
+
+[dependencies]
+lms-verify = { path = "../crates/lms-verify", default-features = false, features = ["sha2"] }
+ml-dsa = { version = "0.1", default-features = false }
+esp-hal = { version = "1.1" }
+esp-println = { version = "0.15" }
+esp-backtrace = { version = "0.17", features = ["panic-handler", "println"] }
+riscv = { version = "0.12", optional = true }
+esp-bootloader-esp-idf = { version = "0.5" }
+nb = "1"
+
+[profile.release]
+opt-level = "s"
+lto = false
+debug = false

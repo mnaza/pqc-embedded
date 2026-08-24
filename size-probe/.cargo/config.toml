@@ -1,0 +1,28 @@
+[target.thumbv6m-none-eabi]
+rustflags = [
+  "-C", "link-arg=-Tlink.x",
+  "-C", "link-arg=--gc-sections",
+  "-C", "link-arg=-L", "-C", "link-arg=.",
+]
+
+[target.thumbv7em-none-eabihf]
+rustflags = [
+  "-C", "link-arg=-Tlink.x",
+  "-C", "link-arg=--gc-sections",
+  "-C", "link-arg=-L", "-C", "link-arg=.",
+]
+
+[target.riscv32imc-unknown-none-elf]
+rustflags = [
+  "-C", "link-arg=-Tlink.x",
+  "-C", "link-arg=--gc-sections",
+  "-C", "link-arg=-L", "-C", "link-arg=.",
+]
+
+[target.riscv32imac-unknown-none-elf]
+rustflags = [
+  "-C", "link-arg=-Tlink.x",
+  "-C", "link-arg=--gc-sections",
+  "-C", "link-arg=-L", "-C", "link-arg=.",
+]
+

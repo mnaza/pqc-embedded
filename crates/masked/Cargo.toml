@@ -1,0 +1,10 @@
+[package]
+name = "masked"
+description = "First-order Boolean masking gadgets, and an honest account of why the compiler is the hard part"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+rand = { workspace = true }

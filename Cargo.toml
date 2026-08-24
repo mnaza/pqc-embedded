@@ -1,0 +1,22 @@
+[workspace]
+resolver = "2"
+exclude = ["size-probe"]
+members = [
+    "crates/lms-verify",
+    "crates/ct-probe",
+    "crates/masked",
+    "crates/boot-budget",
+]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+# Verified, not guessed: the workspace builds and all tests pass on 1.85.1.
+# Re-check with `cargo +<version> test --workspace` before lowering it.
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/mnaza/pqc-embedded"
+
+[workspace.dependencies]
+sha2 = { version = "0.10", default-features = false }
+rand = "0.8"

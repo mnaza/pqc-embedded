@@ -1,0 +1,13 @@
+[workspace]
+
+[package]
+name = "gen-mldsa-vector"
+version = "0.0.1"
+edition = "2021"
+publish = false
+
+# Host-only, and outside the workspace: everything else here is no_std.
+
+[dependencies]
+ml-dsa = { version = "0.1", features = ["rand_core"] }
+
