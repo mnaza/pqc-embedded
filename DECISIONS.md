@@ -321,3 +321,44 @@ SLH-DSA-128f still has no code-size figure.
 And some table values are still estimates which I do not trust very much.
 
 That is fine for now. Better visible missing measurements than numbers which look exact and are not.
+
+FN-DSA was asked for on r/rust. Reasonable ask, and the person making it had the right
+reason: FIPS standardised three so that there is a plan B and a plan C.
+
+It fits better than it looks. This is verify-only, and verification is the half of FALCON
+which does not touch floating point. That problem belongs to signing. Pornin has fn-dsa
+with a separate fn-dsa-vrfy crate for embedded verify-only cases, and it is no_std. So it
+drops into the same shape as the other three instead of needing special handling.
+
+The reason to want it is size. Signatures are much smaller than ML-DSA. That is the
+constraint which actually bites on a small part, and it is what this repo is about.
+
+Not promised. But it is the next one if there is a next one.
+
+
+LMS state management was raised on r/rust and the objection is better than what I wrote.
+
+My argument for LMS in firmware signing was that a build system signs a known number of
+images and can keep state in one place. That is true for one signing box. It is not true
+for a vendor running geographically redundant signing appliances, which is what a large
+one does. Then state is distributed, and for a one-time-key scheme a synchronisation
+failure is not downtime, it is key reuse, and key reuse means forgeable signatures.
+
+I gave this one line. SP 800-208 gives it many pages. That was the weak part of the
+README and it deserved to be found.
+
+It also agrees with my own numbers, which is what makes it uncomfortable. ML-DSA-44
+verifies in 17.3 ms in software against 41.7 ms for LMS with the SHA accelerator, so LMS
+is 2.4x slower even when the hardware helps. LMS wins on RAM, about 1 KB against 34 KB,
+and that is the only axis where it wins. Adding an operational cost that grows with the
+size of the signing organisation narrows LMS further: constrained parts, single signing
+authority.
+
+Not changing the code for this. It changes what the README is allowed to claim.
+
+One clarification I also owed, because I described it badly the first time. The SHA
+problem here is not several implementations of the algorithm. LMS verification needs two
+digests live at the same time, message hash and tree chain, and a hardware SHA peripheral
+has one context register. A single audited implementation does not help, because the
+constraint is the peripheral and not the code.
+

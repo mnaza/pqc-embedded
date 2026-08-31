@@ -61,6 +61,10 @@ The annoying part of LMS is stateful signing keys. For general signing this is r
 
 For firmware signing I think it is much less bad. Build system signs a known number of images and can keep state in one place. NIST SP 800-208 also approves LMS and XMSS for this type of stateful hash-based signature use.
 
+But "state in one place" is doing a lot of work in that sentence, and it does not hold everywhere. A large vendor with geographically redundant signing appliances cannot keep state in one place by definition. Then the state is distributed, and for a one-time-key scheme a synchronisation failure is not downtime. It is key reuse, which means forgeable signatures. SP 800-208 spends many pages on exactly this and I gave it one line.
+
+So the operational cost of LMS grows with the size of the signing organisation, while the RAM benefit stays the same. This narrows LMS to constrained parts with a single signing authority. Credit for this: jodonoghue on r/rust.
+
 Run:
 
 ```sh
