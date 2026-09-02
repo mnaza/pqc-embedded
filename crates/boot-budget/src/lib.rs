@@ -187,6 +187,7 @@ mod tests {
             "ML-DSA-65",
             "ML-DSA-87",
             "SLH-DSA-128s",
+            "FN-DSA-512",
         ];
         for s in SCHEMES {
             assert_eq!(

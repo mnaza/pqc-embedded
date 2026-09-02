@@ -151,7 +151,8 @@ impl Scheme {
 /// which hash crate and version the scheme happens to pull.
 ///
 /// **The order that produces is not the expected one:** LMS 1656, SLH-DSA-128s
-/// 6576, ML-DSA 11049, Ed25519 12808, **ECDSA P-256 16632**. The classical scheme
+/// 6576, FN-DSA-512 9376, ML-DSA 11049, Ed25519 12808, **ECDSA P-256 16632**.
+/// The classical scheme
 /// carries the most code, not the least.
 ///
 /// That order survived a compiler bump: 1.97.1 → 1.98.0 moved every figure by tens
@@ -168,6 +169,13 @@ impl Scheme {
 /// the expanded matrix and several polynomial vectors on the stack. That moved the
 /// scheme from fitting a 32 KB part to not fitting one — a design decision the
 /// estimate would have got backwards.
+///
+/// **The FN-DSA-512 RAM figure is derived from the crate's declared arrays, not
+/// measured**: 1024 bytes for the key's `h`, plus 1024 and 2048 for the two
+/// scratch buffers `verify` puts on the stack, plus the hash state. That method
+/// is the one that under-reported LMS badly enough to send me to hardware, so
+/// treat 4400 as a floor rather than a figure. It is still the interesting
+/// number, because it is roughly four times what LMS needs.
 ///
 /// **RAM is measured only for LMS and ML-DSA-44.** Everything else is a guess,
 /// and [`Scheme::ram_provenance`] says so per row rather than one flag covering
@@ -292,6 +300,21 @@ pub const SCHEMES: &[Scheme] = &[
         code: 13_657,
         code_less_hash: Some(11_209),
         ram: 20_000,
+        code_provenance: Provenance::Measured,
+        ram_provenance: Provenance::Estimated,
+        measured_on: Some(crate::measurements::REPRESENTATIVE),
+        verify_hashes: None,
+        hash_based: false,
+        stateful: false,
+        quantum_broken: false,
+    },
+    Scheme {
+        name: "FN-DSA-512",
+        public_key: 897,
+        signature: 666,
+        code: 11_824,
+        code_less_hash: Some(9_376),
+        ram: 4_400,
         code_provenance: Provenance::Measured,
         ram_provenance: Provenance::Estimated,
         measured_on: Some(crate::measurements::REPRESENTATIVE),

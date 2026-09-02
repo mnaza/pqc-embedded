@@ -335,6 +335,20 @@ constraint which actually bites on a small part, and it is what this repo is abo
 
 Not promised. But it is the next one if there is a next one.
 
+**Done, 2026-09-02.** `fn-dsa-vrfy` 0.4 dropped in with no special handling, exactly as expected.
+
+The result is better than I expected and I want to write down why, because I nearly did not add it.
+
+Measured on the four probe targets, FN-DSA-512 has less scheme-only code than ML-DSA-44 everywhere. 9376 against 11049 on Cortex-M4F. Its key is 897 bytes against 1312 and its signature is 666 against 2420. So it wins on all three of the numbers this repository cares about.
+
+I had assumed FALCON would be the awkward one because of floating point. That is a signing problem. Verification never touches it. My assumption was about the scheme; the constraint was about the operation.
+
+One deliberate choice in the probe. `VerifyingKeyStandard` accepts degree 512 or 1024, so it carries the array for the larger one either way. A boot verifier knows its degree at build time and should pay for one. That is worth about 2 KB of RAM, and hiding it inside a convenience type is the sort of thing this table exists to expose.
+
+RAM is not measured. I read the arrays out of the crate: 1024 in the key, 1024 and 2048 on the stack in `verify`, plus hash state. Around 4400.
+
+That is the same method which under-reported LMS and sent me to hardware. So it is a floor, and it is marked estimated. Until it is measured on a target it should not decide anything.
+
 
 LMS state management was raised on r/rust and the objection is better than what I wrote.
 

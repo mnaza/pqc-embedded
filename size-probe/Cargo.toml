@@ -22,6 +22,7 @@ slh-dsa = { version = "0.2.0-rc.5", default-features = false }
 signature = { version = "3.0.0-rc", default-features = false }
 p256 = { version = "0.14", default-features = false, features = ["ecdsa"] }
 ed25519-dalek = { version = "3.0", default-features = false }
+fn-dsa-vrfy = { version = "0.4", default-features = false }
 
 [profile.release]
 opt-level = "z"

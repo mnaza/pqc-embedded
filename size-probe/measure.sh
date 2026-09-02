@@ -33,6 +33,7 @@ SCHEMES=(
     "ML-DSA-65:mldsa65_only:shake256_only"
     "ML-DSA-87:mldsa87_only:shake256_only"
     "SLH-DSA-128s:slhdsa128s_only:sha256_v11_only"
+    "FN-DSA-512:fndsa512_only:shake256_only"
     "ECDSA P-256:ecdsa_p256_only:sha256_v11_only"
     "Ed25519:ed25519_only:sha512_v11_only"
 )

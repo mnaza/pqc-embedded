@@ -79,11 +79,15 @@ Example comparison:
 scheme            pubkey      sig     tight boot ROM
 ECDSA P-256           33       64               fits   classical
 LMS w8/h5             56     1292               fits   hash-based, stateful
+FN-DSA-512           897      666               fits
 ML-DSA-44           1312     2420              flash
 SLH-DSA-128s          32     7856               fits   hash-based
 ```
 
 ML-DSA has big public key. SLH-DSA has big signature. LMS is somewhere reasonable on both.
+
+FN-DSA-512 is smaller than ML-DSA-44 on both numbers, and also in code. This was
+not obvious to me before measuring. See below.
 
 Also OTP does not need to contain complete public key. Root of trust can store 32-byte digest of public key.
 
@@ -214,6 +218,7 @@ Cortex-M4F:
                      total   hash-base   scheme-only
 LMS w8/h5             5464        3808          1656
 SLH-DSA-128s         15352        8776          6576
+FN-DSA-512           11824        2448          9376
 ML-DSA-44            13497        2448         11049
 Ed25519              41592       28784         12808
 ECDSA P-256          25408        8776         16632
@@ -228,6 +233,28 @@ hash baselines:
 One funny result is classical schemes are not smallest here.
 
 ECDSA P-256 has more scheme-only code than ML-DSA-44 in these builds. LMS is much smaller than both.
+
+### FN-DSA
+
+FN-DSA was asked for on r/rust. It is FALCON under the standardised name, and the reason for asking was good: FIPS standardised three schemes so that there is a plan B and a plan C.
+
+I expected it to be awkward here because of floating point. That belongs to signing. Verification does not touch it, and Pornin ships `fn-dsa-vrfy` as a separate `no_std` crate for exactly the verify-only case.
+
+So it dropped into the same shape as the others, and the numbers are better than I expected:
+
+```text
+scheme          pubkey    sig   scheme-only code (M4F)
+FN-DSA-512         897    666                    9376
+ML-DSA-44         1312   2420                   11049
+```
+
+Smaller key, much smaller signature, less code. On all four measured targets.
+
+The catch is RAM, and here I am not measuring, I am reading the source. The key holds 1024 bytes, and `verify` puts another 1024 and 2048 on the stack. With hash state that is around 4400 bytes.
+
+This is exactly the method which under-reported LMS badly enough that I went to hardware. So treat 4400 as a floor. It is still the interesting number: roughly four times LMS, and far below ML-DSA-44's measured 34044.
+
+I have not measured FN-DSA on hardware, and until I do, this row should not decide anything.
 
 But more surprising for me was hash sizes.
 
