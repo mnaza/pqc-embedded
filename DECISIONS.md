@@ -97,6 +97,42 @@ Funny result is final hardware-capable version uses less stack than original ver
 
 This was one of first cases where hardware limitation looked like API limitation, but actually was not.
 
+### Asked on r/rust: what made you change the trait twice
+
+Short version, because the two changes had different causes.
+
+**First version had `sha2` hardcoded.** There was no trait at all and nothing
+wrong with that. Then I wanted to use the ESP32 SHA peripheral, and that is when
+the trait appeared. That change was ordinary.
+
+**The second change is the interesting one**, and it came from a constraint I got
+wrong.
+
+LMS verification keeps two hash states alive at the same time. `Kc` collects the
+chain outputs, and producing a single chain output needs many hashes by itself.
+In software this is a non-problem. You keep two `Sha256` objects and forget about
+it. The peripheral has one context.
+
+So my first solution was to make the caller pass a scratch buffer. Chain outputs
+went there, and `Kc` was hashed at the end over the whole thing. That is `p * 32`
+bytes, 1088 for `w = 8`, and it cost 664 bytes of stack.
+
+It worked. Then I looked at the peripheral again and found it can save and
+restore its own state. And `sha2::Sha256` is `Clone`. So both backends can park a
+digest instead of me collecting outputs by hand.
+
+Save and restore went into the trait, the scratch parameter disappeared, and the
+final version uses **less stack than the original that had no hardware support at
+all**.
+
+The lesson I took is not about traits. My first solution was working around a
+hardware limitation which was not really there. I had read the peripheral as
+"one context, therefore one digest" and never checked whether it could put a
+context down and pick it up again. It can, and it says so.
+
+On the S3 that costs 34 extra save/restore round trips per verification, about
+1.8% of a 42 ms operation, and it saves roughly 1 KB of RAM.
+
 ## Where assumptions were wrong
 
 ### Linker script problem which looked like compiler problem
