@@ -376,3 +376,36 @@ digests live at the same time, message hash and tree chain, and a hardware SHA p
 has one context register. A single audited implementation does not help, because the
 constraint is the peripheral and not the code.
 
+
+
+## The README led with the wrong thing
+
+Two people on r/rust said the same thing in different words. One said the numbers
+that matter are ML-DSA's, because that is what will actually get used. The other
+said "overall this doesn't tell me much".
+
+They were both right and I said so at the time. The comparison I care most about
+was sitting halfway down a six-hundred-line page, after every section about LMS.
+The repository led with LMS because that is where I started. That is a fact about
+me, not a reason for a reader.
+
+So the comparison moved to the top, and it now carries the operational argument
+as well as the numbers, because the two point the same way. LMS wins on RAM by
+roughly 30x and loses on everything else, and distributed signing state turns its
+one advantage into a liability for any vendor big enough to need geographic
+redundancy. What is left is genuinely constrained parts with a single signing
+authority.
+
+The uncomfortable part is that my own measurements said this before the comments
+did. I had the ML-DSA numbers. I just had them in the wrong place.
+
+## On calling the sha2 difference a regression
+
+I should not have. I measured a difference between 0.10 and 0.11 and I never
+found out why. It could be a deliberate speed against size trade. The README now
+says that.
+
+The reason it mattered is that at the time I was comparing whole verifier
+binaries, so part of what looked like a bigger signature scheme was a bigger
+hash arriving as a dependency. That is what the baseline subtraction is for, and
+noticing this is what put it there.

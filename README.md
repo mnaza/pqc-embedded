@@ -8,6 +8,9 @@ Main question behind this repository is pretty simple:
 
 Nothing here is production code. See [Status](#status).
 
+If you only read one section, read [the comparison](#the-comparison-first).
+It is measured, and it does not say what I expected when I started.
+
 ```text
 crates/
   lms-verify    LMS and HSS (RFC 8554) verification — no_std, no allocator
@@ -32,6 +35,81 @@ The gaps I found more interesting are these:
 | Flash/RAM/OTP numbers used for scheme choice are usually not published | `boot-budget` |
 | There is very little tooling for timing leakage in verification code   | `ct-probe`    |
 | Masking gadgets in Rust are almost absent                              | `masked`      |
+
+## The comparison, first
+
+This used to be halfway down the page, after all the LMS material. Two people
+on r/rust told me that was the wrong order and they were right. The repository
+leads with LMS because that is where I started, which is not a reason a reader
+should have to care about.
+
+So: ESP32-S3, 240 MHz, measured.
+
+|                         | LMS w8/h5 |            ML-DSA-44 | FN-DSA-512 |
+| ----------------------- | --------: | -------------------: | ---------: |
+| code (`.text`)          |      5464 |                13497 |      11824 |
+| public key              |        56 |                 1312 |        897 |
+| signature               |      1292 |                 2420 |        666 |
+| RAM                     |      1152 |            **34044** |  ~4400 est |
+| verify, software        |  138.9 ms |          **17.3 ms** |  not measured |
+| verify, with SHA engine |   41.7 ms | not possible — SHAKE | not possible — SHAKE |
+
+The FN-DSA column is code sizes measured on target and a RAM figure read out of
+the crate, not measured. It is there because it is the newest thing here, not
+because it is finished. Do not decide on that column.
+
+ML-DSA is much faster.
+
+Even after using SHA accelerator, LMS is still about 2.4x slower.
+
+But RAM is opposite: ML-DSA-44 uses about 34 KB, while LMS software path uses little over 1 KB.
+
+This changed my initial conclusion.
+
+At first I expected hardware SHA to be one of strongest arguments for LMS: chip already has SHA engine, LMS uses it, ML-DSA uses SHAKE so accelerator does nothing.
+
+All of this is true.
+
+But 3.3x acceleration is still not enough to make LMS faster than ML-DSA.
+
+So it is not really "LMS wins because SHA hardware".
+
+The question is which budget is tight.
+
+If device has 8 KB RAM, LMS fits and this ML-DSA implementation simply cannot run.
+
+Interesting thing is flash is not the problem. 13497 bytes might fit. RAM is what kills it.
+
+If device has 256 KB RAM then situation is different, and maybe ML-DSA speed becomes more important.
+
+Earlier I had estimate of around 12 KB RAM for ML-DSA-44.
+
+That estimate said it would fit on 32 KB part.
+
+Measurement says 34 KB, so no.
+
+This is exactly why I started caring about `Provenance`. An estimate which changes yes/no fit result is not "close enough".
+
+Some other numbers are still estimates, especially RAM for ML-DSA-65, ML-DSA-87 and SLH-DSA. I would not make hardware decision based on those yet.
+
+### And there is an argument which is not about numbers at all
+
+The strongest objection to LMS I have had was not about size or speed. It was
+about key management, and it came from r/rust.
+
+Above I say a build system signs a known number of images and can keep state in
+one place. A large vendor with geographically redundant signing appliances
+cannot do that by definition. Then the state is distributed, and for a
+one-time-key scheme a synchronisation failure is not downtime. It is key reuse,
+and key reuse means forgeable signatures.
+
+That points the same direction my own measurements do, which is the part I find
+uncomfortable and useful. LMS wins on RAM by roughly 30x. That is the only axis
+where it wins. Add the operational cost on top and the case narrows to genuinely
+constrained parts with a single signing authority.
+
+ML-DSA is the one most people should be measuring, and this repository spent a
+long time not saying so.
 
 ## Verification only
 
@@ -264,6 +342,17 @@ Even `sha2` version makes big difference: SHA-256 from `sha2` 0.10 is 3808 bytes
 
 Same hash algorithm, same target, more than 2x size.
 
+I should be careful with the word regression here, because I measured a
+difference and I did not find out why. It could be a deliberate speed against
+size trade, or a different codegen path. All I know is that both versions end
+up in my lock file because different dependencies require different ones, which
+is how I noticed at all.
+
+What made it worse than just size is that at the time I was comparing whole
+verifier binaries. So part of what looked like "this signature scheme is bigger"
+was really "this dependency brought a bigger hash". That is why the baseline
+subtraction exists.
+
 On RISC-V SHA-512 baseline reaches 51552 bytes.
 
 So before spending lots of time choosing signature algorithm to save 2 KB, maybe check what hash crate is doing first.
@@ -301,55 +390,6 @@ Nothing important changed in ordering.
 So exact byte numbers are compiler-dependent, but main conclusion survived one compiler update at least.
 
 `Cargo.lock` is committed for same reason. Dependency version changes moved numbers more than Rust compiler version did.
-
-## LMS vs ML-DSA on same chip
-
-This is probably the comparison I care most about.
-
-ESP32-S3, 240 MHz:
-
-|                         | LMS w8/h5 |            ML-DSA-44 |
-| ----------------------- | --------: | -------------------: |
-| code (`.text`)          |      5464 |                13497 |
-| public key              |        56 |                 1312 |
-| signature               |      1292 |                 2420 |
-| RAM                     |      1152 |            **34044** |
-| verify, software        |  138.9 ms |          **17.3 ms** |
-| verify, with SHA engine |   41.7 ms | not possible — SHAKE |
-
-ML-DSA is much faster.
-
-Even after using SHA accelerator, LMS is still about 2.4x slower.
-
-But RAM is opposite: ML-DSA-44 uses about 34 KB, while LMS software path uses little over 1 KB.
-
-This changed my initial conclusion.
-
-At first I expected hardware SHA to be one of strongest arguments for LMS: chip already has SHA engine, LMS uses it, ML-DSA uses SHAKE so accelerator does nothing.
-
-All of this is true.
-
-But 3.3x acceleration is still not enough to make LMS faster than ML-DSA.
-
-So it is not really "LMS wins because SHA hardware".
-
-The question is which budget is tight.
-
-If device has 8 KB RAM, LMS fits and this ML-DSA implementation simply cannot run.
-
-Interesting thing is flash is not the problem. 13497 bytes might fit. RAM is what kills it.
-
-If device has 256 KB RAM then situation is different, and maybe ML-DSA speed becomes more important.
-
-Earlier I had estimate of around 12 KB RAM for ML-DSA-44.
-
-That estimate said it would fit on 32 KB part.
-
-Measurement says 34 KB, so no.
-
-This is exactly why I started caring about `Provenance`. An estimate which changes yes/no fit result is not "close enough".
-
-Some other numbers are still estimates, especially RAM for ML-DSA-65, ML-DSA-87 and SLH-DSA. I would not make hardware decision based on those yet.
 
 ## Immutable boot ROM is the real problem
 
