@@ -7,6 +7,29 @@ Everything else in this repository is cross-compiled and modelled: `.text` from 
 linker, stack from `-Z emit-stack-sizes`, cost in SHA-256 compressions. All of it
 is checkable and none of it had run until this.
 
+## FN-DSA-512 is wired up and NOT yet measured
+
+The probe builds for the S3 and runs the same painted-stack measurement over
+FN-DSA-512 that it does over the other two. It has not been flashed yet, because
+that needs the board.
+
+Until it has been, `boot-budget` keeps the estimated 4400 bytes and the README
+keeps saying that row should not decide anything. The estimate came from reading
+the crate's arrays, which is the same method that said ML-DSA-44 needed 12000
+bytes when it needs 34044.
+
+To close it:
+
+```
+cargo +esp run --release --target xtensa-esp32s3-none-elf \
+      --features esp32s3 -Zbuild-std=core
+```
+
+Then put the measured stack figure into `crates/boot-budget/src/budget.rs`, flip
+`ram_provenance` to `Provenance::Measured`, and add the name to `MEASURED` in
+`lib.rs` — the test there fails until every doc comment listing measured rows
+agrees.
+
 ## Results — ESP32-S3, 240 MHz, rev 0.2
 
 ```

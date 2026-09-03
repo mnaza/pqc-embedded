@@ -1,0 +1,12 @@
+[workspace]
+
+[package]
+name = "gen-fndsa-vector"
+version = "0.0.1"
+edition = "2021"
+publish = false
+
+[dependencies]
+fn-dsa = "0.4"
+rand_core = "0.6"
+rand = "0.8"

@@ -22,6 +22,7 @@ esp-backtrace = { version = "0.17", features = ["panic-handler", "println"] }
 riscv = { version = "0.12", optional = true }
 esp-bootloader-esp-idf = { version = "0.5" }
 nb = "1"
+fn-dsa-vrfy = { version = "0.4", default-features = false }
 
 [profile.release]
 opt-level = "s"

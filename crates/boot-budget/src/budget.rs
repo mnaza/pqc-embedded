@@ -170,14 +170,20 @@ impl Scheme {
 /// scheme from fitting a 32 KB part to not fitting one — a design decision the
 /// estimate would have got backwards.
 ///
-/// **The FN-DSA-512 RAM figure is derived from the crate's declared arrays, not
-/// measured**: 1024 bytes for the key's `h`, plus 1024 and 2048 for the two
-/// scratch buffers `verify` puts on the stack, plus the hash state. That method
-/// is the one that under-reported LMS badly enough to send me to hardware, so
-/// treat 4400 as a floor rather than a figure. It is still the interesting
-/// number, because it is roughly four times what LMS needs.
+/// **FN-DSA-512 RAM is now measured too: 3708 bytes on an ESP32-S3.**
 ///
-/// **RAM is measured only for LMS and ML-DSA-44.** Everything else is a guess,
+/// I had estimated 4400 by adding up the crate's declared arrays -- 1024 for the
+/// key's `h`, 1024 and 2048 for the two scratch buffers -- and said to treat it
+/// as a floor, because deriving RAM from source is what under-reported LMS.
+/// **The direction was wrong.** The estimate was high, not low. Those three
+/// arrays alone come to 4096, so the compiler is not keeping them all live at
+/// once, and I have not worked out exactly what it does instead.
+///
+/// The lesson is not "estimates are low". It is that an estimate has no
+/// direction you can rely on, which is why the provenance is recorded rather
+/// than the confidence.
+///
+/// **RAM is measured for LMS, ML-DSA-44 and FN-DSA-512.** Everything else is a guess,
 /// and [`Scheme::ram_provenance`] says so per row rather than one flag covering
 /// both columns — an earlier version had a single field, and rows started claiming
 /// measured RAM because their code size had been measured.
@@ -314,9 +320,9 @@ pub const SCHEMES: &[Scheme] = &[
         signature: 666,
         code: 11_824,
         code_less_hash: Some(9_376),
-        ram: 4_400,
+        ram: 3_708,
         code_provenance: Provenance::Measured,
-        ram_provenance: Provenance::Estimated,
+        ram_provenance: Provenance::Measured,
         measured_on: Some(crate::measurements::REPRESENTATIVE),
         verify_hashes: None,
         hash_based: false,

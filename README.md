@@ -45,18 +45,21 @@ should have to care about.
 
 So: ESP32-S3, 240 MHz, measured.
 
-|                         | LMS w8/h5 |            ML-DSA-44 | FN-DSA-512 |
-| ----------------------- | --------: | -------------------: | ---------: |
-| code (`.text`)          |      5464 |                13497 |      11824 |
-| public key              |        56 |                 1312 |        897 |
-| signature               |      1292 |                 2420 |        666 |
-| RAM                     |      1152 |            **34044** |  ~4400 est |
-| verify, software        |  138.9 ms |          **17.3 ms** |  not measured |
+|                         | LMS w8/h5 |            ML-DSA-44 |           FN-DSA-512 |
+| ----------------------- | --------: | -------------------: | -------------------: |
+| code (`.text`)          |      5464 |                13497 |                11824 |
+| public key              |        56 |                 1312 |                  897 |
+| signature               |      1292 |                 2420 |              **666** |
+| RAM                     |  **1152** |            **34044** |                 3708 |
+| verify, software        |  138.9 ms |              17.3 ms |          **3.9 ms**  |
 | verify, with SHA engine |   41.7 ms | not possible — SHAKE | not possible — SHAKE |
 
-The FN-DSA column is code sizes measured on target and a RAM figure read out of
-the crate, not measured. It is there because it is the newest thing here, not
-because it is finished. Do not decide on that column.
+All three columns are measured, on the same chip, over the same message.
+
+FN-DSA-512 is the surprise. It is the fastest of the three by a distance, it has
+the smallest signature, and its RAM sits closer to LMS than to ML-DSA. It gets
+nothing from the SHA engine and still beats LMS-with-engine by about eleven
+times.
 
 ML-DSA is much faster.
 
@@ -328,11 +331,23 @@ ML-DSA-44         1312   2420                   11049
 
 Smaller key, much smaller signature, less code. On all four measured targets.
 
-The catch is RAM, and here I am not measuring, I am reading the source. The key holds 1024 bytes, and `verify` puts another 1024 and 2048 on the stack. With hash state that is around 4400 bytes.
+I expected RAM to be the catch. First I read it out of the source: the key holds 1024 bytes, and `verify` puts another 1024 and 2048 on the stack, so around 4400 with hash state. I wrote that it should be treated as a floor, because deriving RAM from source is exactly what under-reported LMS badly enough to send me to hardware.
 
-This is exactly the method which under-reported LMS badly enough that I went to hardware. So treat 4400 as a floor. It is still the interesting number: roughly four times LMS, and far below ML-DSA-44's measured 34044.
+Then I measured it on an ESP32-S3. **3708 bytes.**
 
-I have not measured FN-DSA on hardware, and until I do, this row should not decide anything.
+So the estimate was high, not low, and the direction I was confident about was wrong. Those three arrays alone add up to 4096, so the compiler is not keeping them all live at the same time, and I have not worked out what it does instead.
+
+The lesson is not that estimates run low. It is that an estimate has no direction you can rely on. That is why this repository records where a number came from and not how sure I felt about it.
+
+Timing, same chip, same 162-byte message:
+
+```text
+scheme          verify      stack
+LMS software    138.9 ms     1152
+LMS + SHA engine 41.7 ms     2600
+ML-DSA-44        17.3 ms    34044
+FN-DSA-512        3.9 ms     3708
+```
 
 But more surprising for me was hash sizes.
 

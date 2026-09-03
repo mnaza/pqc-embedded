@@ -34,6 +34,7 @@ use lms_verify::{verify_with, SoftSha256};
 
 #[cfg(feature = "esp32s3")]
 mod hw_sha;
+mod fndsa_vector;
 mod mldsa_vector;
 
 const PK_HEX: &[&str] = &[
@@ -388,10 +389,69 @@ fn main() -> ! {
                     None => println!("  stack            exceeded {WIDE_WINDOW} bytes"),
                 }
             }
+            // Integer division printed "0.4x slower" here, which reads as a claim
+            // that ML-DSA is slower. It is faster, and the ratio has to be taken
+            // the other way round to say so.
+            let hw = hw_elapsed.max(1);
+            if ml_elapsed < hw {
+                println!(
+                    "  vs LMS+hw        {}.{}x faster",
+                    hw / ml_elapsed.max(1),
+                    (hw * 10 / ml_elapsed.max(1)) % 10
+                );
+            } else {
+                println!(
+                    "  vs LMS+hw        {}.{}x slower",
+                    ml_elapsed / hw,
+                    (ml_elapsed * 10 / hw) % 10
+                );
+            }
+            println!();
+        }
+
+        // FN-DSA-512 on the same silicon. Its RAM figure was the one estimate left
+        // in the budget table, derived by reading the crate's arrays rather than
+        // measured -- and that is exactly the method which said ML-DSA-44 needed
+        // 12000 bytes when it needs 34044. So it gets measured here like the rest.
+        //
+        // Like ML-DSA it hashes with SHAKE, so the SHA accelerator is unreachable
+        // and there is only a software number.
+        //
+        // `VerifyingKey512` rather than `VerifyingKeyStandard`: Standard accepts
+        // degree 512 or 1024 and therefore carries the array for the larger one
+        // whichever key it gets. A boot verifier knows its degree at build time.
+        {
+            use fn_dsa_vrfy::{VerifyingKey, VerifyingKey512, DOMAIN_NONE, HASH_ID_RAW};
+
+            let msg = &fndsa_vector::MSG[..];
+            let sig = &fndsa_vector::SIG[..];
+
+            let run = || match VerifyingKey512::decode(&fndsa_vector::PK[..]) {
+                Some(vk) => vk.verify(sig, &DOMAIN_NONE, &HASH_ID_RAW, msg),
+                None => false,
+            };
+
+            let _ = run();
+            let start = cycles();
+            let ok = run();
+            let fn_elapsed = cycles().wrapping_sub(start);
+
+            println!("FN-DSA-512 (fn-dsa-vrfy, software -- SHAKE, so no accelerator)");
+            println!("  result           {ok}");
+            println!("  cycles           {fn_elapsed}");
+            println!("  at 240 MHz       {} us", fn_elapsed / 240);
+            if let Some((bottom, top)) = paint_window(WIDE_WINDOW) {
+                let _ = run();
+                match stack_watermark(bottom, top) {
+                    Some(used) => println!("  stack            {used} bytes"),
+                    None => println!("  stack            exceeded {WIDE_WINDOW} bytes"),
+                }
+            }
+            let hw = hw_elapsed.max(1);
             println!(
-                "  vs LMS+hw        {}.{}x slower",
-                ml_elapsed / hw_elapsed.max(1),
-                (ml_elapsed * 10 / hw_elapsed.max(1)) % 10
+                "  vs LMS+hw        {}.{}x faster",
+                hw / fn_elapsed.max(1),
+                (hw * 10 / fn_elapsed.max(1)) % 10
             );
             println!();
         }
@@ -406,14 +466,17 @@ fn main() -> ! {
         println!("  gives it a real 3.3x discount. ML-DSA hashes with SHAKE and the");
         println!("  S3's accelerator is SHA-2 only, so it gets nothing.");
         println!();
-        println!("  And ML-DSA is still 2.4x faster. The discount is real and does");
-        println!("  not decide anything.");
+        println!("  And ML-DSA is still 2.4x faster, so the discount is real and");
+        println!("  does not decide anything by itself.");
         println!();
-        println!("  What decides is RAM: 34044 bytes against 1152. A part with 8 KB");
-        println!("  can run LMS and cannot run ML-DSA at all -- not for want of");
-        println!("  flash, which fits, but for stack.");
+        println!("  What decides between those two is RAM: 34044 bytes against");
+        println!("  1152. A part with 8 KB can run LMS and cannot run ML-DSA at");
+        println!("  all -- not for want of flash, which fits, but for stack.");
         println!();
-        println!("  So the trade is time against memory, and neither wins outright.");
+        println!("  FN-DSA-512 is the one that upsets the trade. It is the fastest");
+        println!("  here by a distance, it gets nothing from the SHA engine, and");
+        println!("  its stack sits nearer LMS than ML-DSA. I added it because a");
+        println!("  reader asked, expecting it to be awkward.");
     }
 
     if result.is_err() {

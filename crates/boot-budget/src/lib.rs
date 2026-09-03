@@ -277,7 +277,13 @@ mod tests {
         // Code and RAM are established by different means, so one flag cannot cover
         // both. An earlier version had one, and every row whose code got measured
         // started advertising measured RAM it never had.
-        const RAM_MEASURED: &[&str] = &["LMS w8/h5", "LMS w8/h10", "LMS w4/h10", "ML-DSA-44"];
+        const RAM_MEASURED: &[&str] = &[
+            "LMS w8/h5",
+            "LMS w8/h10",
+            "LMS w4/h10",
+            "ML-DSA-44",
+            "FN-DSA-512",
+        ];
         for s in SCHEMES {
             assert_eq!(
                 s.ram_provenance == Provenance::Measured,

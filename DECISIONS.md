@@ -445,3 +445,43 @@ The reason it mattered is that at the time I was comparing whole verifier
 binaries, so part of what looked like a bigger signature scheme was a bigger
 hash arriving as a dependency. That is what the baseline subtraction is for, and
 noticing this is what put it there.
+
+
+## The FN-DSA RAM estimate was wrong in the direction I was sure about
+
+I estimated 4400 bytes by adding the arrays the crate declares: 1024 for the
+key's `h`, 1024 and 2048 for the two scratch buffers in `verify`, plus hash
+state. I wrote that it should be read as a floor, because deriving RAM from
+source is what under-reported LMS badly enough that I went to hardware.
+
+Measured on an ESP32-S3: **3708 bytes.**
+
+The estimate was high. Those three arrays alone come to 4096, so the compiler is
+not keeping them all live at once, and I have not worked out what it does
+instead. I could guess, and a guess is what got me here.
+
+What I take from it is narrower than "estimates are unreliable". It is that an
+estimate has no direction you can lean on. I had a reason to expect low and the
+reason was sound and it was still wrong. This is why the table records where a
+number came from and not how confident I was.
+
+## Timing, and a display bug that had been lying
+
+Full numbers on one chip, same 162-byte message:
+
+```text
+scheme            verify      stack
+LMS software     138.9 ms      1152
+LMS + SHA engine  41.7 ms      2600
+ML-DSA-44         17.3 ms     34044
+FN-DSA-512         3.9 ms      3708
+```
+
+FN-DSA-512 is the fastest by a distance, gets nothing from the SHA accelerator,
+and its stack sits nearer LMS than ML-DSA. Adding it was somebody else's idea.
+
+While reading that output I found the probe had been printing `vs LMS+hw 0.4x
+slower` for ML-DSA. Integer division of the faster time by the slower one, which
+rounds to zero and then reads as a claim that ML-DSA is slower than LMS. It is
+2.4x faster. The line had been wrong for as long as it had existed, in a
+direction that flattered the scheme this repository started out about.
